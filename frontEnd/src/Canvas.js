@@ -37,21 +37,23 @@ const Canvas = ({
     const { offsetX, offsetY } = e.nativeEvent;
 
     if (tool === "pencil") {
-      setElements((prevElements) => [
-        ...prevElements,
-        {
-          offsetX,
-          offsetY,
-          path: [[offsetX, offsetY]],
-          stroke: color,
-          element: tool,
-        },
-      ]);
+      const data = {
+        offsetX,
+        offsetY,
+        path: [[offsetX, offsetY]],
+        stroke: color,
+        element: tool,
+      };
+      setElements((prevElements) => [...prevElements, data]);
+      socket.emit("drawing", {
+        points: data,
+      });
     } else {
-      setElements((prevElements) => [
-        ...prevElements,
-        { offsetX, offsetY, stroke: color, element: tool },
-      ]);
+      const data = { offsetX, offsetY, stroke: color, element: tool };
+      setElements((prevElements) => [...prevElements, data]);
+      socket.emit("drawing", {
+        points: data,
+      });
     }
 
     setIsDrawing(true);
@@ -92,8 +94,6 @@ const Canvas = ({
         });
       }
     });
-    const canvasImage = canvasRef.current.toDataURL();
-    socket.emit("drawing", canvasImage);
   }, [elements]);
 
   const handleMouseMove = (e) => {
@@ -104,47 +104,65 @@ const Canvas = ({
 
     if (tool === "rect") {
       setElements((prevElements) =>
-        prevElements.map((ele, index) =>
-          index === elements.length - 1
-            ? {
-                offsetX: ele.offsetX,
-                offsetY: ele.offsetY,
-                width: offsetX - ele.offsetX,
-                height: offsetY - ele.offsetY,
-                stroke: ele.stroke,
-                element: ele.element,
-              }
-            : ele
-        )
+        prevElements.map((ele, index) => {
+          if (index === elements.length - 1) {
+            const data = {
+              offsetX: ele.offsetX,
+              offsetY: ele.offsetY,
+              width: offsetX - ele.offsetX,
+              height: offsetY - ele.offsetY,
+              stroke: ele.stroke,
+              element: ele.element,
+            };
+            socket.emit("drawing", {
+              points: data,
+            });
+            return data;
+          } else {
+            return ele;
+          }
+        })
       );
     } else if (tool === "line") {
       setElements((prevElements) =>
-        prevElements.map((ele, index) =>
-          index === elements.length - 1
-            ? {
-                offsetX: ele.offsetX,
-                offsetY: ele.offsetY,
-                width: offsetX,
-                height: offsetY,
-                stroke: ele.stroke,
-                element: ele.element,
-              }
-            : ele
-        )
+        prevElements.map((ele, index) => {
+          if (index === elements.length - 1) {
+            const data = {
+              offsetX: ele.offsetX,
+              offsetY: ele.offsetY,
+              width: offsetX,
+              height: offsetY,
+              stroke: ele.stroke,
+              element: ele.element,
+            };
+            socket.emit("drawing", {
+              points: data,
+            });
+            return data;
+          } else {
+            return ele;
+          }
+        })
       );
     } else if (tool === "pencil") {
       setElements((prevElements) =>
-        prevElements.map((ele, index) =>
-          index === elements.length - 1
-            ? {
-                offsetX: ele.offsetX,
-                offsetY: ele.offsetY,
-                path: [...ele.path, [offsetX, offsetY]],
-                stroke: ele.stroke,
-                element: ele.element,
-              }
-            : ele
-        )
+        prevElements.map((ele, index) => {
+          if (index === elements.length - 1) {
+            const data = {
+              offsetX: ele.offsetX,
+              offsetY: ele.offsetY,
+              path: [...ele.path, [offsetX, offsetY]],
+              stroke: ele.stroke,
+              element: ele.element,
+            };
+            socket.emit("drawing", {
+              points: data,
+            });
+            return data;
+          } else {
+            return ele;
+          }
+        })
       );
     }
   };

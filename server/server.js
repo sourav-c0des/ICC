@@ -23,10 +23,13 @@ app.get("/", (req, res) => {
 });
 
 // socket.io
-let imageUrl, userRoom;
+let canvasData, userRoom, roomOwner;
 io.on("connection", (socket) => {
   socket.on("user-joined", (data) => {
     const { roomId, userId, userName, host, presenter } = data;
+    if (!roomOwner) {
+      roomOwner = userId;
+    }
     userRoom = roomId;
     const user = userJoin(socket.id, userName, roomId, host, presenter);
     const roomUsers = getUsers(user.room);
@@ -39,12 +42,25 @@ io.on("connection", (socket) => {
     });
 
     io.to(user.room).emit("users", roomUsers);
-    io.to(user.room).emit("canvasImage", imageUrl);
+    io.to(user.room).emit("drawing", canvasData);
   });
 
   socket.on("drawing", (data) => {
-    imageUrl = data;
-    socket.broadcast.to(userRoom).emit("canvasImage", imageUrl);
+    if (data && canvasData) {
+      canvasData.push(data);
+    } else {
+      if (data) {
+        canvasData = [data];
+      } else {
+        canvasData = [];
+      }
+    }
+    socket.broadcast.to(userRoom).emit("drawing", data);
+  });
+
+  socket.on("clear", () => {
+    canvasData = [];
+    socket.broadcast.to(userRoom).emit("clear");
   });
 
   socket.on("disconnect", () => {
@@ -52,10 +68,15 @@ io.on("connection", (socket) => {
     const roomUsers = getUsers(userRoom);
 
     if (userLeaves) {
-      io.to(userLeaves.room).emit("message", {
-        message: `${userLeaves.username} left the chat`,
-      });
-      io.to(userLeaves.room).emit("users", roomUsers);
+      if (userLeaves.host) {
+        canvasData = [];
+        io.to(userLeaves.room).emit("cancel-room");
+      } else {
+        io.to(userLeaves.room).emit("message", {
+          message: `${userLeaves.username} left the chat`,
+        });
+        io.to(userLeaves.room).emit("users", roomUsers);
+      }
     }
   });
 });

@@ -21,6 +21,39 @@ const Room = ({ userNo, socket, setUsers, setUserNo }) => {
       setUserNo(data.length);
     });
   }, []);
+  useEffect(() => {
+    socket.on("drawing", (data) => {
+      if (!data || data.length === 0) {
+        return;
+      }
+      if (Array.isArray(data)) {
+        setElements((prevElements) => [
+          ...prevElements,
+          ...data.map((d) => d.points),
+        ]);
+      } else {
+        setElements((prevElements) => [...prevElements, data.points]);
+      }
+    });
+  }, []);
+  useEffect(() => {
+    socket.on("clear", () => {
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+      context.fillStyle = "white";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      setElements([]);
+    });
+  }, []);
+  useEffect(() => {
+    socket.on("cancel-room", () => {
+      toast.info(`Owner left the room`);
+      setElements([]);
+      setTimeout(() => {
+        location.href = "/";
+      }, 3000);
+    });
+  }, []);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -28,6 +61,7 @@ const Room = ({ userNo, socket, setUsers, setUserNo }) => {
     context.fillStyle = "white";
     context.fillRect(0, 0, canvas.width, canvas.height);
     setElements([]);
+    socket.emit("clear");
   };
 
   const undo = () => {

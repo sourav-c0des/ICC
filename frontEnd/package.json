@@ -1,5 +1,5 @@
 {
-  "name": "react",
+  "name": "react_app",
   "version": "0.0.0",
   "private": true,
   "dependencies": {
@@ -19,7 +19,7 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-scripts": "latest"
+    "react-scripts": "^5.0.1"
   },
   "browserslist": {
     "production": [
